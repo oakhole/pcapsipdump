@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
     bool number_filter_matched=false;
 #ifdef USE_REGEXP
     regex_t number_filter;
-    number_filter.allocated=0;
+    bool have_number_filter=false;
 #else
     char number_filter[128];
     number_filter[0]=0;
@@ -143,7 +143,12 @@ int main(int argc, char *argv[])
                 break;
             case 'n':
 #ifdef USE_REGEXP
-                regcomp(&number_filter,optarg,0);
+                if (regcomp(&number_filter,optarg,0) == 0) {
+                    have_number_filter = true;
+                } else {
+                    fprintf(stderr, "Invalid regular expression: %s\n", optarg);
+                    return 1;
+                }
 #else
                 strcpy(number_filter,optarg);
 #endif
@@ -371,7 +376,7 @@ int main(int argc, char *argv[])
 #ifdef USE_REGEXP
                     {
                         regmatch_t pmatch[1];
-                        if ((number_filter.allocated==0) ||
+                        if (!have_number_filter ||
                             (regexec(&number_filter, caller, 1, pmatch, 0)==0) ||
                             (regexec(&number_filter, called, 1, pmatch, 0)==0)) {
                             number_filter_matched=true;
@@ -511,7 +516,7 @@ int get_ip_port_from_sdp(char *sdp_text, in_addr_t *addr, unsigned short *port){
 }
 
 char * gettag(const void *ptr, unsigned long len, const char *tag, unsigned long *gettaglen){
-    unsigned long register r,l,tl;
+    unsigned long r,l,tl;
     char *rc;
 
     tl=strlen(tag);
