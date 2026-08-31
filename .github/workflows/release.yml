@@ -1,0 +1,82 @@
+name: CI & Release
+
+on:
+  push:
+    branches: [ master, main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master, main ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-test:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target_arch: linux-x86_64
+          - os: macos-latest
+            target_arch: darwin-arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpcap-dev build-essential
+
+      - name: Build
+        run: make DEFS=-DUSE_REGEXP
+
+      - name: Test CLI flags
+        run: |
+          ./pcapsipdump -P 5080 || true
+          ./pcapsipdump --port 5080 || true
+          ! ./pcapsipdump -P 0
+          ! ./pcapsipdump --port 70000
+
+      - name: Package artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          TARGET_ARCH: ${{ matrix.target_arch }}
+        run: |
+          TAR_NAME="pcapsipdump-${REF_NAME}-${TARGET_ARCH}.tar.gz"
+          tar -czvf "${TAR_NAME}" pcapsipdump
+          echo "PACKAGE_NAME=${TAR_NAME}" >> "$GITHUB_ENV"
+
+      - name: Upload artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PACKAGE_NAME }}
+          path: ${{ env.PACKAGE_NAME }}
+
+  release:
+    name: Create GitHub Release
+    needs: build-and-test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-artifacts/*
+          generate_release_notes: true

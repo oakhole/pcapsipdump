@@ -27,10 +27,10 @@
 #define PCAPSIPDUMP_VERSION "0.2"
 
 struct iphdr {
-#if defined(__LITTLE_ENDIAN)
+#if defined(__LITTLE_ENDIAN) || (defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN) || (defined(BYTE_ORDER) && BYTE_ORDER == LITTLE_ENDIAN) || (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
 	uint8_t	ihl:4,
 		version:4;
-#elif defined (__BIG_ENDIAN)
+#elif defined (__BIG_ENDIAN) || (defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN) || (defined(BYTE_ORDER) && BYTE_ORDER == BIG_ENDIAN) || (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
 	uint8_t	version:4,
   		ihl:4;
 #else

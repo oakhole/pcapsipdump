@@ -20,12 +20,14 @@
     Project's home: http://pcapsipdump.sf.net/
 */
 
-#ifdef sparc
+#if defined(__APPLE__)
+#include <machine/endian.h>
+#elif defined(sparc)
 #define __BIG_ENDIAN 1
-#endif
-#ifndef sparc
+#else
 #include <endian.h>
 #endif
+#include <getopt.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -98,6 +100,7 @@ int main(int argc, char *argv[])
     int opt_packetbuffered=0;
     int opt_t38only=0;
     int opt_rtpsave=RTPSAVE_RTP_RTCP;
+    int opt_port=5060;
     int verbosity=0;
     bool number_filter_matched=false;
 #ifdef USE_REGEXP
@@ -112,14 +115,26 @@ int main(int argc, char *argv[])
     fname=NULL;
     opt_chdir="/var/spool/pcapsipdump";
 
+    static struct option long_options[] = {
+        {"port", required_argument, 0, 'P'},
+        {0, 0, 0, 0}
+    };
+
     while(1) {
         char c;
 
-        c = getopt (argc, argv, "i:r:d:v:n:R:fpUt");
+        c = getopt_long (argc, argv, "i:r:d:v:n:R:fpUtP:", long_options, NULL);
         if (c == -1)
             break;
 
         switch (c) {
+            case 'P':
+                opt_port = atoi(optarg);
+                if (opt_port <= 0 || opt_port > 65535) {
+                    fprintf(stderr, "Invalid port: %s\n", optarg);
+                    return 1;
+                }
+                break;
             case 'i':
                 ifname=optarg;
                 break;
@@ -178,7 +193,7 @@ int main(int argc, char *argv[])
 
     if ((fname==NULL)&&(ifname==NULL)){
 	printf( "pcapsipdump version %s\n"
-		"Usage: pcapsipdump [-fpU] [-i <interface>] [-r <file>] [-d <working directory>] [-v level] [-R filter]\n"
+		"Usage: pcapsipdump [-fpU] [-i <interface>] [-r <file>] [-d <working directory>] [-v level] [-R filter] [-P <port>]\n"
 		" -f   Do not fork or detach from controlling terminal.\n"
 		" -p   Do not put the interface into promiscuous mode.\n"
 		" -R   RTP filter. Possible values: 'rtp+rtcp' (default), 'rtp', 'rtpevent', 't38', or 'none'.\n"
@@ -190,6 +205,7 @@ int main(int argc, char *argv[])
 		"      Argument is regular expression. See 'man 7 regex' for details\n"
 #endif
 		" -t   T.38-filter. Only calls, containing T.38 payload indicated in SDP will be recorded\n"
+		" -P, --port <port>  SIP port to listen to (default 5060)\n"
 		,PCAPSIPDUMP_VERSION);
 	return 1;
     }
@@ -329,8 +345,8 @@ int main(int argc, char *argv[])
                         pcap_dump((u_char *)ct->table[idx_leg].f_pcap,pkt_header,pkt_data);
                         if (opt_packetbuffered) {pcap_dump_flush(ct->table[idx_leg].f_pcap);}
                     }
-                }else if (htons(header_udp->source)==5060||
-                    htons(header_udp->dest)==5060){
+                }else if (htons(header_udp->source)==opt_port||
+                    htons(header_udp->dest)==opt_port){
                     char caller[256];
                     char called[256];
                     char sip_method[256];

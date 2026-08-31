@@ -1,0 +1,10 @@
+# Build binaries
+pcapsipdump
+pcapsipdump-debug
+
+# Objects and archives
+*.o
+*.tar.gz
+
+# macOS
+.DS_Store
