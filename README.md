@@ -1,5 +1,9 @@
 # pcapsipdump (中文文档)
 
+[![CI & Release](https://github.com/oakhole/pcapsipdump/actions/workflows/release.yml/badge.svg)](https://github.com/oakhole/pcapsipdump/actions/workflows/release.yml)
+[![Version](https://img.shields.io/badge/version-0.2-blue.svg)](https://github.com/oakhole/pcapsipdump)
+[![GitHub Release](https://img.shields.io/github/v/release/oakhole/pcapsipdump?color=green)](https://github.com/oakhole/pcapsipdump/releases)
+
 `pcapsipdump` 是一个用于抓取 SIP 会话（并在可用时包含关联的 RTP/RTCP/T.38 媒体流）并转储到磁盘的工具。其存储格式与 `tcpdump -w` 完全相同（标准 pcap 格式），但会**按 SIP 会话将数据包拆分为独立的文件**（即便同时存在数千个并发通话）。
 
 此外，`pcapsipdump` 也可以用于将包含多个通话的“大容量” pcap 文件离线拆分为每个通话单独的 pcap 文件。

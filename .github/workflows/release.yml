@@ -12,23 +12,14 @@ permissions:
 
 jobs:
   build-and-test:
-    name: Build (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target_arch: linux-x86_64
-          - os: macos-latest
-            target_arch: darwin-arm64
+    name: Build (Ubuntu 22.04)
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install dependencies (Ubuntu)
-        if: runner.os == 'Linux'
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libpcap-dev build-essential
@@ -47,9 +38,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           REF_NAME: ${{ github.ref_name }}
-          TARGET_ARCH: ${{ matrix.target_arch }}
         run: |
-          TAR_NAME="pcapsipdump-${REF_NAME}-${TARGET_ARCH}.tar.gz"
+          TAR_NAME="pcapsipdump-${REF_NAME}-linux-x86_64.tar.gz"
           tar -czvf "${TAR_NAME}" pcapsipdump
           echo "PACKAGE_NAME=${TAR_NAME}" >> "$GITHUB_ENV"
 
@@ -64,7 +54,7 @@ jobs:
     name: Create GitHub Release
     needs: build-and-test
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
